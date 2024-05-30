@@ -1,0 +1,10 @@
+#### Request limited by IP
+GET http://localhost:8080/ HTTP/1.1
+Host: localhost:8080
+Content-Type: application/json
+
+#### Request limited by API_KEY
+GET http://localhost:8080/ HTTP/1.1
+Host: localhost:8080
+Content-Type: application/json
+API_KEY:  5e7b3b3b-3b3b-3b3b-3b3b-3b3b3b3b3b3b
