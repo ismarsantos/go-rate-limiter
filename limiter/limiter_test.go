@@ -32,7 +32,7 @@ func TestRedisRateLimiter_Allow(t *testing.T) {
 		BlockDuration: 10 * time.Second,
 	}
 
-	limiter := &RedisRateLimiter{
+	limiter := &RedisStore{
 		client: client,
 		config: config,
 	}
@@ -62,7 +62,7 @@ func TestRedisRateLimiter_SetLimit(t *testing.T) {
 		BlockDuration: 10 * time.Second,
 	}
 
-	limiter := &RedisRateLimiter{
+	limiter := &RedisStore{
 		client: client,
 		config: config,
 	}
@@ -78,7 +78,7 @@ func TestRedisRateLimiter_SetLimit(t *testing.T) {
 	}
 
 	// Change rate limit
-	limiter.SetLimit(10)
+	limiter.config.RateLimit = 10
 
 	// Test within new rate limit
 	for i := 0; i < 5; i++ {

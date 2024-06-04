@@ -33,7 +33,7 @@ func TestRateLimiter(t *testing.T) {
 		BlockDuration: 10 * time.Second,
 	}
 
-	rateLimiter := limiter.NewRedisRateLimiter(config)
+	rateLimiter := limiter.NewRateLimiter(limiter.NewRedisStore(client), config.RateLimit, config.BlockDuration)
 
 	ctx := context.Background()
 	key := "test_key"
@@ -43,21 +43,20 @@ func TestRateLimiter(t *testing.T) {
 
 	// Testar que até 5 requisições são permitidas
 	for i := 0; i < 5; i++ {
-		allowed, err := rateLimiter.Allow(ctx, key)
-		assert.NoError(t, err)
+		allowed := rateLimiter.Allow(ctx, key, config.RateLimit)
+
 		assert.True(t, allowed)
 	}
 
 	// A 6ª requisição deve ser bloqueada
-	allowed, err := rateLimiter.Allow(ctx, key)
-	assert.NoError(t, err)
+	allowed := rateLimiter.Allow(ctx, key, config.RateLimit)
 	assert.False(t, allowed)
 
 	// Esperar o tempo de bloqueio
 	time.Sleep(config.BlockDuration)
 
 	// Após o tempo de bloqueio, a requisição deve ser permitida novamente
-	allowed, err = rateLimiter.Allow(ctx, key)
-	assert.NoError(t, err)
+	allowed = rateLimiter.Allow(ctx, key, config.RateLimit)
+
 	assert.True(t, allowed)
 }

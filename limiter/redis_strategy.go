@@ -2,41 +2,24 @@ package limiter
 
 import (
 	"context"
-	"os"
 	"strconv"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 )
 
 // RedisRateLimiter é a implementação do RateLimiter usando o Redis.
-type RedisRateLimiter struct {
+type RedisStore struct {
 	client *redis.Client
 	config Config
 }
 
-// NewRedisRateLimiter cria uma nova instância do RedisRateLimiter.
-func NewRedisRateLimiter(config Config) *RedisRateLimiter {
-	redisAddr := os.Getenv("REDIS_ADDR")
-	redisPassword := os.Getenv("REDIS_PASSWORD")
-	redisDB, err := strconv.Atoi(os.Getenv("REDIS_DB"))
-	if err != nil {
-		redisDB = 0
-	}
-
-	client := redis.NewClient(&redis.Options{
-		Addr:     redisAddr,
-		Password: redisPassword,
-		DB:       redisDB,
-	})
-
-	return &RedisRateLimiter{
-		client: client,
-		config: config,
-	}
+func NewRedisStore(client *redis.Client) *RedisStore {
+	return &RedisStore{client: client}
 }
 
 // Allow verifica se a requisição é permitida com base no IP ou token.
-func (rl *RedisRateLimiter) Allow(ctx context.Context, key string) (bool, error) {
+func (rl *RedisStore) Allow(ctx context.Context, key string) (bool, error) {
 	// Incrementa o contador e obtém o valor atual
 	val, err := rl.client.Incr(ctx, key).Result()
 	if err != nil {
@@ -57,6 +40,25 @@ func (rl *RedisRateLimiter) Allow(ctx context.Context, key string) (bool, error)
 }
 
 // SetLimit ajusta o limite de requisições permitidas.
-func (rl *RedisRateLimiter) SetLimit(limit int) {
-	rl.config.RateLimit = limit
+func (r *RedisStore) Set(key string, value int, expiration int) error {
+	return r.client.Set(context.Background(), key, value, time.Duration(expiration)*time.Second).Err()
+}
+
+func (r *RedisStore) Get(key string) (int, error) {
+	val, err := r.client.Get(context.Background(), key).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return strconv.Atoi(val)
+}
+
+func (r *RedisStore) Increment(key string) (int, error) {
+	val, err := r.client.Incr(context.Background(), key).Result()
+	if err != nil {
+		return 0, err
+	}
+	return int(val), nil
 }

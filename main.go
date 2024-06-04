@@ -10,6 +10,7 @@ import (
 	"go-rate-limiter/middleware"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 )
 
@@ -43,7 +44,15 @@ func main() {
 		BlockDuration: time.Duration(blockDur) * time.Second,
 	}
 
-	rateLimiter, err := limiter.NewRateLimiter("redis", config)
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0, // Use DB 0 for tests
+	})
+
+	store := limiter.NewRedisStore(client)
+
+	rateLimiter := limiter.NewRateLimiter(store, config.RateLimit, config.BlockDuration)
 	if err != nil {
 		log.Fatalf("Error creating rate limiter: %v", err)
 	}
